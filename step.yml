@@ -4,9 +4,9 @@ summary: |
   Post build status to bitbucket server
 description: |
   Post build status to bitbucket server
-website: https://github.com/teameh/bitrise-step-bitbucket-server-post-build-status
-source_code_url: https://github.com/teameh/bitrise-step-bitbucket-server-post-build-status
-support_url: https://github.com/teameh/bitrise-step-bitbucket-server-post-build-status/issues
+website: https://github.com/fcar12/bitrise-step-bitbucket-server-post-build-status
+source_code_url: https://github.com/fcar12/bitrise-step-bitbucket-server-post-build-status
+support_url: https://github.com/fcar12/bitrise-step-bitbucket-server-post-build-status/issues
 host_os_tags:
   - osx-10.10
   - ubuntu-16.04
