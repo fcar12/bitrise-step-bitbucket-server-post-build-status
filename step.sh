@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Exit early if manually triggered
+if [ "$BITRISE_TRIGGER_METHOD" = "manual" ]; then
+  echo "- Build triggered manually, skipping"
+  exit 0
+fi
+
 join_ws() { local IFS=; local s="${*/#/$1}"; echo "${s#"$1$1$1"}"; }
 joinStrings() { local a=("${@:3}"); printf "%s" "$2${a[@]/#/$1}"; }
 
