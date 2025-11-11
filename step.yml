@@ -25,37 +25,43 @@ toolkit:
 inputs:
   - domain:
     opts:
+      category: Bitbucket configuration
       title: Bitbucket Server domain name
       summary: Full domain name without protocol eg 'my-domain.com'
       description: Full domain name without protocol eg 'my-domain.com'
       is_required: true
   - username:
     opts:
+      category: Bitbucket configuration
       title: Bitbucket Server username
       summary: The username used to make REST calls to bitbucket server
       description: The username used to make REST calls to bitbucket server
       is_required: false
   - password:
     opts:
+      category: Bitbucket configuration
       title: Bitbucket Server password
       summary: The password for the bitbucket server username
-      description: The password for the bitbucket server username
-      is_required: false
+      description: The password for the bitbucket server username / token for certificate authentication
+      is_required: true
       is_sensitive: true
   - client_cert:
     opts:
+      category: Bitbucket configuration
       title: Client TLS certificate (PEM)
       summary: Path or inline PEM for a client certificate to use for mTLS authentication (optional)
       description: Path to a PEM file or inline certificate content. If provided together with `client_key`, curl will use them instead of username/password.
       is_required: false
   - client_key:
     opts:
+      category: Bitbucket configuration
       title: Client TLS key (PEM)
       summary: Path or inline PEM for a client private key to use for mTLS authentication (optional)
       description: Path to a PEM file or inline key content. If provided together with `client_cert`, curl will use them instead of username/password.
       is_required: false
   - preset_status: "AUTO"
     opts:
+      category: Status reporting configuration
       title: "Set Specific Status"
       summary: "Override bitrise build status"
       description: |-
@@ -72,27 +78,51 @@ inputs:
       - "INPROGRESS"
       - "SUCCESSFUL"
       - "FAILED"
-  - git_clone_commit_hash: $GIT_CLONE_COMMIT_HASH
+  - build_status: $BITRISE_BUILD_STATUS
     opts:
+      category: Status reporting configuration
+      title: Build status env variable
+      summary: Env var to use for build status
+      description: |-
+        Use `$BITRISE_BUILD_STATUS` for workflows or `$BITRISEIO_PIPELINE_BUILD_STATUS` for pipelines
+  - git_commit_hash: $BITRISE_GIT_COMMIT
+    opts:
+      category: Status reporting configuration
       title: Git commit hash
+      summary: Hash of commit that triggered the build
       is_required: true
   - app_title: $BITRISE_APP_TITLE
     opts:
+      category: Status reporting configuration
       title: Bitrise app title
       is_dont_change_value: true
       is_required: true
   - build_number: $BITRISE_BUILD_NUMBER
     opts:
+      category: Status reporting configuration
       title: Bitrise build number
       is_dont_change_value: true
       is_required: true
   - build_url: $BITRISE_BUILD_URL
     opts:
-      title: Bitrise build url
-      is_dont_change_value: true
+      category: Status reporting configuration
+      title: Bitrise workflow/pipeline build url
+      summary: "Build url"
+      description: |-
+        Use `$BITRISE_BUILD_URL` for workflows builds or `$BITRISEIO_PIPELINE_BUILD_URL` for pipeline builds.
       is_required: true
-  - triggered_workflow_id: $BITRISE_TRIGGERED_WORKFLOW_ID
+  - triggered_id: $BITRISE_TRIGGERED_WORKFLOW_ID
     opts:
-      title: Bitrise triggered workflow id
-      is_dont_change_value: true
+      category: Status reporting configuration
+      title: Bitrise triggered workflow/pipeline id
+      summary: "Triggered id"
+      description: |-
+        Use `$BITRISE_TRIGGERED_WORKFLOW_ID` for workflows builds or `$BITRISEIO_PIPELINE_ID` for pipeline builds.
       is_required: true
+  - debug_enabled: "no"
+    opts:
+      category: Debugging
+      title: Debug enabled
+      value_options:
+      - "no"
+      - "yes"

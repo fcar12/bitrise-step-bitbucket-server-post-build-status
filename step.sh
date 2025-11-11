@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [ "$debug_enabled" == "yes" ]; then
+  set -x
+fi
+
 # Exit early if manually triggered
 if [ "$BITRISE_TRIGGER_METHOD" = "manual" ]; then
   echo "- Build triggered manually, skipping"
@@ -23,20 +27,20 @@ if [ -z "$client_cert" ] || [ -z "$client_key" ]; then
     INVALID_INPUT=true
     echo "- Missing input field: username"
   fi
-
-  if [ -z "$password" ]; then
-    INVALID_INPUT=true
-    echo "- Missing input field: password"
-  fi
 fi
 
-if [ -z "$git_clone_commit_hash" ]; then
-  git_clone_commit_hash=`git rev-parse HEAD`
+if [ -z "$password" ]; then
+  INVALID_INPUT=true
+  echo "- Missing input field: password"
+fi
 
-  echo "- Missing input field: git_clone_commit_hash, falling back to 'git rev-parse HEAD' ($git_clone_commit_hash)"
+if [ -z "$git_commit_hash" ]; then
+  git_commit_hash=`git rev-parse HEAD`
 
-  if [ -z "$git_clone_commit_hash" ]; then
-    echo "- Unable to get git commit from current directory or git_clone_commit_hash input field"
+  echo "- Missing input field: git_commit_hash, falling back to 'git rev-parse HEAD' ($git_commit_hash)"
+
+  if [ -z "$git_commit_hash" ]; then
+    echo "- Unable to get git commit from current directory or git_commit_hash input field"
     INVALID_INPUT=true
   fi
 fi
@@ -56,9 +60,9 @@ if [ -z "$build_url" ]; then
   echo "- Missing input field: build_url"
 fi
 
-if [ -z "$triggered_workflow_id" ]; then
+if [ -z "$triggered_id" ]; then
   INVALID_INPUT=true
-  echo "- Missing input field: triggered_workflow_id"
+  echo "- Missing input field: triggered_id"
 fi
 
 # Optional client certificate auth (mTLS)
@@ -115,15 +119,15 @@ if [ -n "$preset_status" ] && [ "$preset_status" != "AUTO" ]; then
     echo "- Invalid preset_status, must be one of [\"AUTO\", \"INPROGRESS\", \"SUCCESSFUL\", \"FAILED\"]"
     INVALID_INPUT=true
   fi
-elif [ -z "$BITRISE_BUILD_STATUS" ]; then
-  echo "- Missing env var: \$BITRISE_BUILD_STATUS"
+elif [ -z "$build_status" ]; then
+  echo "- Missing env var: \$build_status"
   INVALID_INPUT=true
-elif [ "$BITRISE_BUILD_STATUS" == "0" ]; then
+elif [ "$build_status" == "0" ] || [ "$build_status" == "succeeded" ]; then
   BITBUCKET_BUILD_STATE="SUCCESSFUL"
-elif [ "$BITRISE_BUILD_STATUS" == "1" ]; then
+elif [ "$build_status" == "1" ] || [ "$build_status" == "failed" ] || [ "$build_status" == "aborted" ] || [ "$build_status" == "succeeded_with_abort" ]; then
   BITBUCKET_BUILD_STATE="FAILED"
 else
-  echo "- Invalid \$BITRISE_BUILD_STATUS. Should be \"0\" or \"1\", not '$BITRISE_BUILD_STATUS'"
+  echo "- Invalid \$build_status. Should be \"0\", \"1\", \"succeeded\", \"failed\", \"aborted\", \"succeeded_with_abort\" not '$build_status'"
   INVALID_INPUT=true
 fi
 
@@ -136,25 +140,25 @@ echo "--- step inputs (non-sensitive) ---"
 echo "- domain: $domain"
 echo "- username: $username"
 echo "- preset_status: ${preset_status:-AUTO}"
-echo "- BITRISE_BUILD_STATUS: ${BITRISE_BUILD_STATUS:-<unset>}"
+echo "- build_status: ${build_status:-<unset>}"
 echo "- computed Bitbucket state: ${BITBUCKET_BUILD_STATE:-<unset>}"
-echo "- git_clone_commit_hash: ${git_clone_commit_hash:-<unset>}"
+echo "- git_commit_hash: ${git_commit_hash:-<unset>}"
 echo "- app_title: ${app_title:-<unset>}"
 echo "- build_number: ${build_number:-<unset>}"
 echo "- build_url: ${build_url:-<unset>}"
-echo "- triggered_workflow_id: ${triggered_workflow_id:-<unset>}"
+echo "- triggered_id: ${triggered_id:-<unset>}"
 echo "- using_cert_auth: $USE_CERT_AUTH"
 echo "- trigger_method: $BITRISE_TRIGGER_METHOD"
 echo "-----------------------------------"
 
-BITBUCKET_API_ENDPOINT="https://$domain/rest/build-status/1.0/commits/$git_clone_commit_hash"
+BITBUCKET_API_ENDPOINT="https://$domain/rest/build-status/1.0/commits/$git_commit_hash"
 
 echo "Post build status: $BITBUCKET_BUILD_STATE"
 echo "API Endpoint: $BITBUCKET_API_ENDPOINT"
 
 # Build curl auth args: prefer client cert/key if provided, otherwise use username:password
 if [ "$USE_CERT_AUTH" = true ]; then
-  CURL_AUTH_ARGS=(--cert "$CERT_FILE_PATH" --key "$KEY_FILE_PATH")
+  CURL_AUTH_ARGS=(--cert "$CERT_FILE_PATH" --key "$KEY_FILE_PATH" -H "Authorization: Bearer $password")
 else
   CURL_AUTH_ARGS=(-u "$username:$password")
 fi
@@ -174,9 +178,9 @@ curl "$BITBUCKET_API_ENDPOINT" \
   --data-binary \
       $"{
         \"state\": \"$BITBUCKET_BUILD_STATE\",
-        \"key\": \"Bitrise - $BITRISE_BUILD_SLUG - Build $triggered_workflow_id - #$BITRISE_BUILD_NUMBER\",
-        \"name\": \"Bitrise $app_title ($triggered_workflow_id) #$build_number\",
+        \"key\": \"Build $triggered_id - #$BITRISE_BUILD_NUMBER\",
+        \"name\": \"Bitrise $app_title #$build_number\",
         \"url\": \"$build_url\",
-        \"description\": \"workflow: $triggered_workflow_id\"
+        \"description\":  \"Bitrise $app_title #$build_number ($triggered_id)\"
        }" \
    --compressed
